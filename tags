@@ -12,4 +12,5 @@ get_pattern	pattern.sh	/^get_pattern()$/;"	f
 pattern	pattern.sh	/^pattern()$/;"	f
 printf_pattern	pattern.sh	/^printf_pattern()$/;"	f
 reset_pattern	pattern.sh	/^reset_pattern()$/;"	f
+setPatternDir	pattern.sh	/^setPatternDir()$/;"	f
 set_pattern	pattern.sh	/^set_pattern()$/;"	f
