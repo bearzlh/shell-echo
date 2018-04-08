@@ -6,6 +6,8 @@ start_pattern=
 end_pattern=
 current_dir=`dirname $0`
 
+SPLIT='||'
+
 error()
 {
     echo -e "\033[31m$1\033[0m"
@@ -25,10 +27,15 @@ getParamsNum()
     echo $n
 }
 
+get_matched_pattern()
+{
+    pattern_list=`sed -n 's/ \+#.*$/\n/p' $current_dir/pattern.txt`
+    echo `echo "$pattern_list" | sed -n "/^$1/p" | sed -n "1p"`
+}
+
 pattern()
 {
-    return=
-    pattern_list=`sed -n 's/ \+#.*$/\n/p' $current_dir/pattern.txt`
+    string=
     for param in $@
     do
         param=`echo $param | sed 's/:/ /g;p' | sed -n '$p'`
@@ -44,30 +51,24 @@ pattern()
         else
             p1=$param
         fi
-        match=`echo "$pattern_list" | sed -n "/^$p1/p"`
-        if [ -z "$match" ];then
-            error "${FUNCNAME[0]} $* ==> params error,no matched"
-        else
-            match_num=`echo -n "$match" | wc -l`
-        fi
-        if [ $match_num -gt 1 ];then
-            error "${FUNCNAME[0]} $* ==> should match one;matched:\n`echo \"$match\" | sed -n 's/ .*//p'`"
-        fi
-        params_num=$[`getParamsNum "$match"` + 1]
-        
-        if [ $params_receive_num -ne $params_num ];then
-            error "${FUNCNAME[0]} ==> should offer $params_num params,$params_receive_num received"
-        fi
-        code=`echo $match | sed -n 's/.*\ //p'`
-        if [ "$params_receive_num" -eq 2 ];then
-            code=`echo $code | sed -n "s/\[X\]/$p2/p"`
-        elif [ "$params_receive_num" -eq 3 ];then
-            code=`echo $code | sed -n "s/\[X\]/$p2/p" | sed -n "s/\[Y\]/$p3/p"`
-        fi
+        match=`get_matched_pattern "$p1"`
+        if [ ! -z "$match" ];then
+            params_num=$[`getParamsNum "$match"` + 1]
 
-        return=$return"$prefix$code"
+            if [ $params_receive_num -ne $params_num ];then
+                error "${FUNCNAME[0]} ==> should offer $params_num params,$params_receive_num received"
+            fi
+            code=`echo $match | sed -n 's/.*\ //p'`
+            if [ "$params_receive_num" -eq 2 ];then
+                code=`echo $code | sed -n "s/\[X\]/$p2/p"`
+            elif [ "$params_receive_num" -eq 3 ];then
+                code=`echo $code | sed -n "s/\[X\]/$p2/p" | sed -n "s/\[Y\]/$p3/p"`
+            fi
+
+            string=$string"$prefix$code"
+        fi
     done
-    echo $return
+    echo $string
 }
 
 #设置输入模式
@@ -119,33 +120,34 @@ escape_charactor()
 
 check_pattern()
 {
-    return=$1
+    string=$1
     start_pattern_match=`echo $1 | sed -n "/<\*\*/p"`
     end_pattern_match=`echo $1 | sed -n "/\*\*>/p"`
     start_pattern_escape=`escape_charactor $start_pattern`
     end_pattern_escape=`escape_charactor $end_pattern`
 
     if [ -z $start_pattern_match -a -z $end_pattern_match ];then
-        return=$start_pattern$1$end_pattern
+        string=$start_pattern$1$end_pattern
     else
         if [ ! -z $start_pattern_match ];then
-            return=`echo $return | sed -n "s/<\*\*/$start_pattern_escape/g;p"`
+            string=`echo $string | sed -n "s/<\*\*/$start_pattern_escape/g;p"`
         fi
         if [ ! -z $end_pattern_match ];then
-            return=`echo $return | sed -n "s/\*\*>/$end_pattern_escape/g;p"`
+            string=`echo $string | sed -n "s/\*\*>/$end_pattern_escape/g;p"`
         fi
     fi
-    echo $return
+    echo $string
 }
 
 
-#输出
+#echo解析
 echo_pattern()
 {
     string=`check_pattern $@`
     echo -en $string
 }
 
+#printf解析
 printf_pattern()
 {
     p1=`check_pattern $1`
@@ -153,3 +155,40 @@ printf_pattern()
     pl=`echo $@ | sed -n "s/$r//g;p"`
     printf $start_pattern$p1$end_pattern $pl
 }
+
+#标签式解析
+label_pattern()
+{
+    close=`pattern off`
+    gt_split=$SPLIT$SPLIT
+    input=`echo -n $1 | awk -v "s=$gt_split" 'BEGIN{RS=">"}{if ($0) print aa$0bb;else print s}' | sed "s/ /$SPLIT/g;p" | uniq`
+    str=
+    for p in $input
+    do
+        if [ "$p" == $gt_split ];then
+            str=$str">"
+            continue
+        fi
+        if [ ! -z `echo $p | grep "<\w\+$SPLIT"` ];then
+            pleft_text=${p%%<*}
+            prighth=${p#*<}
+            pflag=${prighth%%$SPLIT*}
+            pright_text=${p#*$SPLIT}
+            match=`pattern "$pflag"`
+            if [ -z $match ];then
+                str=$str$p">"
+            else
+                str=$str$pleft_text$match$pright_text$close
+            fi
+        else
+            str=$str$p
+        fi
+    done
+    if [ ! -z `echo $str | grep "$SPLIT"` ];then
+        str=`echo $str | sed -n "s/$SPLIT/ /g;p"`
+    fi
+    echo -en $str
+}
+
+#echo "bb<ffcblue aaa><a>    >"
+#label_pattern "bb<ffcblue aaa><a>    >"
