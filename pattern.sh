@@ -151,7 +151,7 @@ echo_pattern()
 printf_pattern()
 {
     p1=`check_pattern $1`
-    r=`escape_charactor $p1`
+    r=`escape_charactor $1`
     pl=`echo $@ | sed -n "s/$r//g;p"`
     printf $start_pattern$p1$end_pattern $pl
 }
