@@ -1,7 +1,7 @@
 #!/bin/sh
 #加载输出颜色脚本
 . ./pattern.sh
-setPatternDir /data/src/pattern
+setPatternDir /data/src/shell
 
 if [ -z $LOG ];then
     LOG=/tmp/log
