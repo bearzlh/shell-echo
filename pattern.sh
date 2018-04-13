@@ -183,7 +183,7 @@ label_pattern()
         pright=${string#*<}
 
         #如果左侧内容含有空格
-        if [[ ! -z `echo $pright | grep " "` ]];then
+        if [[ ! -z `echo "$pright" | grep " "` ]];then
             #截取空格左侧
             pflag=${pright%% *}
             #查看是否匹配模式

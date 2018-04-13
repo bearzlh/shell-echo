@@ -64,7 +64,7 @@ runMake()
                 suffix=${suffix}_nts
             fi
 
-            make clean >> $LOG 2>&1
+            make dist clean >> $LOG 2>&1
             log "./configure --prefix=${TARGET_DIR}${suffix} $flags"
             make clean >> $LOG 2>&1
             ./configure --prefix=${TARGET_DIR}${suffix} $flags >> $LOG 2>&1
