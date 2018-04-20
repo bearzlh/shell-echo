@@ -1,6 +1,6 @@
 #!/bin/sh
 #加载输出颜色脚本
-. ./pattern.sh
+. /data/src/shell/pattern.sh
 setPatternDir /data/src/shell
 
 if [ -z $LOG ];then
