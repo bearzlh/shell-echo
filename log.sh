@@ -30,3 +30,12 @@ info()
     echo -e "`time_format`==>${green}$1${off}"
     echo "`date`==>$1">>$LOG
 }
+
+#输出结束信息
+error()
+{
+    red=`pattern ffcred`
+    off=`pattern off`
+    echo -e "`time_format`==>${red}$1${off}"
+    echo "`date`==>$1">>$LOG
+}
