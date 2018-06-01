@@ -1,10 +1,10 @@
 #!/bin/sh
+current_dir="$(dirname $(readlink -f ${BASH_SOURCE}))/"
 background_default=grey
 foreground_default=black
 prefix='\033['
 start_pattern=
 end_pattern=
-current_dir=`dirname $0`
 
 SPLIT='||'
 

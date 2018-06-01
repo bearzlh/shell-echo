@@ -1,7 +1,7 @@
 #!/bin/sh
 #加载输出颜色脚本
-. /data/src/shell/pattern.sh
-setPatternDir /data/src/shell
+CURRENT_DIR="$(dirname $(readlink -f ${BASH_SOURCE}))/"
+source  ${CURRENT_DIR}/pattern.sh
 
 if [ -z $LOG ];then
     LOG=/tmp/log

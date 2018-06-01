@@ -1,5 +1,5 @@
 #!/bin/sh
-#批量编译安装php。只编译php-fpm,apache的libphp,debug选项，分是否支持zts两个版本
+#批量编译安装php
 
 LIB='libjpeg-turbo-devel libmcrypt-devel libpng-devel libmcrypt-devel openssl-devel'
 
