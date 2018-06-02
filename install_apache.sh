@@ -16,7 +16,7 @@
 #       CREATED: 2018年06月01日 13时08分22秒
 #      REVISION:  ---
 #===============================================================================
-
+source ./main.sh
 INSTALL_LIST="APR APR_UTIL APACHE"
 
 APACHE_VERSION=2.4.33
@@ -39,7 +39,6 @@ APR_FLAGS=""
 APR_UTIL_FLAGS="--with-apr=$APR_PREFIX"
 
 LIBS="openssl-devel"
-. ./log.sh
 
 if [ ! -d $(dirname $LOG) ];then
     mkdir -p $(dirname $LOG)
@@ -47,52 +46,6 @@ fi
 if [ ! -d "$SRC_DIR" ];then
     mkdir -p $SRC_DIR
 fi
-
-
-
-#---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  exec_cmd
-#   DESCRIPTION:  execute shell command
-#    PARAMETERS:  command
-#       RETURNS:  
-#-------------------------------------------------------------------------------
-exec_cmd ()
-{
-    log "execute:$@"
-    $@ >> $LOG 2>&1
-
-    if [ $? != 0 ] ; then
-        error "result-error:cmd->$1,look $LOG for help"
-        exit
-    else
-        info "ok"
-    fi
-}	# ----------  end of function exec_cmd  ----------
-
-#---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  check_lib
-#   DESCRIPTION:  install necessary libs if uninstalled
-#    PARAMETERS:  
-#       RETURNS:  
-#-------------------------------------------------------------------------------
-check_lib ()
-{
-    for lib in $LIBS; do
-        rpm -q $lib > /dev/null
-        if [ $? != 0 ]; then
-            log "$lib is required"
-            package_count=$(yum search $lib | grep $lib | wc -l)
-            if [ $package_count > 1 ];then
-                log "$lib installing"
-                exec_cmd "yum -y install $lib"
-            else
-                error "$lib is missing;exit"
-                exit
-            fi
-        fi
-    done
-
-}	# ----------  end of function check_lib  ----------
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  check_file
@@ -103,20 +56,11 @@ check_lib ()
 check_file()
 {
     for file in $INSTALL_LIST; do
-        version=`eval echo '$'${file}_VERSION`
+
         mirror=`eval echo '$'${file}_MIRROR`
-        flags=`eval echo '$'${file}_FLAGS`
         tar_file=`basename $mirror`
 
-        cd $SRC_DIR
-        if [ ! -f "$SRC_DIR$tar_file" ] ; then
-            exec_cmd "wget -O $tar_file $mirror"
-        fi
-
-        dir=${tar_file%.tar*}
-        if [ ! -d "$dir" ] ; then
-            exec_cmd "tar zxf $tar_file"
-        fi
+        download $SRC_DIR $tar_file $mirror
     done
 }	# ----------  end of function check_file  ----------
 
@@ -157,7 +101,6 @@ install()
 
 }
 
-check_lib
 check_file
 case $1 in
     "i" | "install")
