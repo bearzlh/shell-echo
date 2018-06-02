@@ -1,12 +1,12 @@
 #!/bin/sh
-current_dir="$(dirname $(readlink -f ${BASH_SOURCE}))/"
-background_default=grey
-foreground_default=black
-prefix='\033['
-start_pattern=
-end_pattern=
+pattern_current_dir="$(dirname $(readlink -f ${BASH_SOURCE}))/"
+pattern_background_default=grey
+pattern_foreground_default=black
+pattern_prefix='\033['
+pattern_start=
+pattern_end=
 
-SPLIT='||'
+pattern_split='||'
 
 error()
 {
@@ -16,7 +16,7 @@ error()
 
 setPatternDir()
 {
-   current_dir=`dirname $1`/`basename $1`/
+   pattern_current_dir=`dirname $1`/`basename $1`/
 }
 
 getParamsNum()
@@ -29,7 +29,7 @@ getParamsNum()
 
 get_matched_pattern()
 {
-    pattern_list=`sed -n 's/ \+#.*$/\n/p' $current_dir/pattern.txt`
+    pattern_list=`sed -n 's/ \+#.*$/\n/p' $pattern_current_dir/pattern.txt`
     echo `echo "$pattern_list" | sed -n "/^$1/p" | sed -n "1p"`
 }
 
@@ -65,7 +65,7 @@ pattern()
                 code=`echo $code | sed -n "s/\[X\]/$p2/p" | sed -n "s/\[Y\]/$p3/p"`
             fi
 
-            string=$string"$prefix$code"
+            string=$string"$pattern_prefix$code"
         fi
     done
     echo $string
@@ -74,21 +74,21 @@ pattern()
 #设置输入模式
 set_pattern()
 {
-    start_pattern="`pattern $@`"
-    end_pattern="`pattern off`"
+    pattern_start="`pattern $@`"
+    pattern_end="`pattern off`"
 }
 
 #查看当前输入模式
 get_pattern()
 {
-    echo "$start_pattern" 
+    echo "$pattern_start" 
 }
 
 #重置输入模式
 reset_pattern()
 {
-    start_pattern=
-    end_pattern=
+    pattern_start=
+    pattern_end=
 }
 
 escape_charactor()
@@ -121,19 +121,19 @@ escape_charactor()
 check_pattern()
 {
     string=$1
-    start_pattern_match=`echo $1 | sed -n "/<\*\*/p"`
-    end_pattern_match=`echo $1 | sed -n "/\*\*>/p"`
-    start_pattern_escape=`escape_charactor $start_pattern`
-    end_pattern_escape=`escape_charactor $end_pattern`
+    pattern_start_match=`echo $1 | sed -n "/<\*\*/p"`
+    pattern_end_match=`echo $1 | sed -n "/\*\*>/p"`
+    pattern_start_escape=`escape_charactor $pattern_start`
+    pattern_end_escape=`escape_charactor $pattern_end`
 
-    if [ -z $start_pattern_match -a -z $end_pattern_match ];then
-        string=$start_pattern$1$end_pattern
+    if [ -z $pattern_start_match -a -z $pattern_end_match ];then
+        string=$pattern_start$1$pattern_end
     else
-        if [ ! -z $start_pattern_match ];then
-            string=`echo $string | sed -n "s/<\*\*/$start_pattern_escape/g;p"`
+        if [ ! -z $pattern_start_match ];then
+            string=`echo $string | sed -n "s/<\*\*/$pattern_start_escape/g;p"`
         fi
-        if [ ! -z $end_pattern_match ];then
-            string=`echo $string | sed -n "s/\*\*>/$end_pattern_escape/g;p"`
+        if [ ! -z $pattern_end_match ];then
+            string=`echo $string | sed -n "s/\*\*>/$pattern_end_escape/g;p"`
         fi
     fi
     echo $string
@@ -153,7 +153,7 @@ printf_pattern()
     p1=`check_pattern $1`
     r=`escape_charactor $1`
     pl=`echo $@ | sed -n "s/$r//g;p"`
-    printf $start_pattern$p1$end_pattern $pl
+    printf $pattern_start$p1$pattern_end $pl
 }
 
 #标签式解析
@@ -166,9 +166,9 @@ label_pattern()
 {
     string="$*"
     #<替换符
-    split_lt='||'
+    pattern_split_lt='||'
     #>替换符
-    split_gt='=='
+    pattern_split_gt='=='
     #查找<
     while [[ ! -z `echo $string | grep "<"` ]]
     do
@@ -177,7 +177,7 @@ label_pattern()
 
         #如果左侧文本含有>，则替换
         if [[ ! -z `echo $pleft_text | grep ">"` ]];then
-            pleft_text=`echo $pleft_text | sed -n "s/>/$split_gt/p"`
+            pleft_text=`echo $pleft_text | sed -n "s/>/$pattern_split_gt/p"`
         fi
         #右侧内容
         pright=${string#*<}
@@ -202,21 +202,21 @@ label_pattern()
 
                 string=$pleft_text$match$pright
             else
-                string=$pleft_text$split_lt$pright
+                string=$pleft_text$pattern_split_lt$pright
             fi
         else
-            string=$pleft_text$split_lt$pright
+            string=$pleft_text$pattern_split_lt$pright
         fi
     done
 
     #将<还原
-    if [ ! -z "`echo $string | grep $split_lt`" ];then
-        string=`echo $string | sed -n "s/$split_lt/</p"`
+    if [ ! -z "`echo $string | grep $pattern_split_lt`" ];then
+        string=`echo $string | sed -n "s/$pattern_split_lt/</p"`
     fi
     
     #将>还原
-    if [ ! -z "`echo $string | grep $split_gt`" ];then
-        string=`echo $string | sed -n "s/$split_gt/>/p"`
+    if [ ! -z "`echo $string | grep $pattern_split_gt`" ];then
+        string=`echo $string | sed -n "s/$pattern_split_gt/>/p"`
     fi
 
     #输出结果
