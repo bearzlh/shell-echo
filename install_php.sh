@@ -1,154 +1,169 @@
 #!/bin/sh
 #批量编译安装php
 
-LIB='libjpeg-turbo-devel libmcrypt-devel libpng-devel libmcrypt-devel openssl-devel'
+#load main function file
+source ./main.sh
 
-#php源码目录，名称格式：php-5.3.29
+LIB='libjpeg-turbo-devel libmcrypt-devel libpng-devel libmcrypt-devel openssl-devel mariadb-devel'
+
+PHP_VERSION_LIST="5.3.29 5.4.45 5.5.38 5.6.34 7.2.5"
+
+PHP_MIRROR=http://cn2.php.net/get/php-{VERSION}.tar.gz/from/this/mirror
+
+#php source dir
 PHP_SRC_DIR="/data/src/php/"
 
-#日志文件
-LOG=/data/log/php_install
+#dir to install php
+PHP_SOFTWARE_DIR='/data/software/php/'
 
-#安装到哪个目录
-TARGET_DIR='/data/software/php/'
+#log file
+LOG=/data/log/install_php
 
-#so文件放置到的目录
+#dir to backup libphp[57].so
 SO_DIR='/data/so_dir/'
 
-#apache的模块目录
+#apache dir
 APACHE_DIR='/data/software/apache/'
 
-#启用debug选项,如果为空则不开启
-DEFAULT="--with-pdo-mysql --with-mysqli --with-curl --with-mcrypt --with-openssl --enable-mbstring --with-gd --enable-zip --enable-fpm --with-apxs2=${APACHE_DIR}bin/apxs"
+#optional flag to install php
+PHP_INSTALL_FLAGS="--with-pdo-mysql --with-mysqli --with-curl --with-mcrypt --with-openssl --enable-mbstring --with-gd --enable-zip --enable-fpm --with-apxs2=${APACHE_DIR}bin/apxs"
 
-#空格替换符号
+#pattern to replace space
 SPLIT='||'
 
-#zts选项
+#zts and nts
 zts_flag="--enable-maintainer-zts ${SPLIT}"
 
-#apax_flag="--with-apxs2=${APACHE_DIR}bin/apxs"
 
-#加载日志文件
-. ./log.sh
-checkEnv()
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  check_dir
+#   DESCRIPTION:  create dir if not exists
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+check_dir ()
 {
-   for lib in $LIB
-   do
-       count=`rpm -ql $lib|wc -l`
-       if [ $count -eq 1 ];then
-           log "$lib required,installing"
-           yum -y install $lib>>$LOG 2>&1
-           if [ $? != 0 ];then
-               error "$lib install error"
-           else
-               info "$lib installed"
-           fi
-       fi
-   done
-}
+    dir_list="$PHP_SRC_DIR $PHP_SOFTWARE_DIR $SO_DIR `dirname $LOG`"
 
-checkEnv
-#备份so文件
-backUpSo()
-{
-    version=$1
-    main_version=`echo $1 | cut -d "." -f1`
-
-    if [ ! -d $SO_DIR ];then
-        mkdir -p $SO_DIR
-    fi
-    module_dir=${APACHE_DIR}modules
-    php_so="libphp${main_version}.so"
-    if [ -f "$module_dir/$php_so" ];then
-        mv $module_dir/$php_so $SO_DIR${version}.so
-    fi
-}
-
-#编译
-runMake()
-{
-    #zts选项
-    for zts in $zts_flag
-    do
-        if [ `echo $version | cut -d "." -f1,2` == "5.3" ];then
-            DEFAULT=`echo $DEFAULT | sed -n "s/--with-apxs2=\\/data\\/software\\/apache\\/bin\\/apxs//p"`
+    for dir in $dir_list; do
+        if [ ! -d $dir ] ; then
+            exec_cmd "mkdir -p $dir"
         fi
-       flags=`echo "$DEFAULT $zts" | sed "s/"$SPLIT"/ /g"  | sed 's/ \+/ /g'`
-
-        suffix=$version
-        if [[ ! -z `echo "$flags" | grep "zts"` ]];then
-            suffix=${suffix}_zts
-        else
-            suffix=${suffix}_nts
-
-        fi
-
-        log "make distclean"
-        make distclean >> $LOG 2>&1
-        log "./configure --prefix=${TARGET_DIR}${suffix} $flags"
-        ./configure --prefix=${TARGET_DIR}${suffix} $flags >> $LOG 2>&1
-        if [ $? != 0 ];then
-            error "result-error:configure for $verion;continue\n"
-            continue;
-        fi
-        log "sed -i 's/-g /-g3 -gdwarf-2 /g' Makefile"
-        sed -i 's/-g /-ggdb3 /g' Makefile
-        log "make"
-        if [ $? != 0 ];then
-            error "result-error:make for $version;continue\n"
-            continue;
-        fi
-        make >> $LOG 2>&1
-
-        log "make install"
-        #remove php installed dir if exists
-        if [ -d "${TARGET_DIR}${suffix}" ];then
-            log "rm -rf ${TARGET_DIR}${suffix}"
-            rm -rf ${TARGET_DIR}${suffix}
-        fi
-
-        #backup libphp[57].so if created
-        make install >> $LOG 2>&1
-        if [[ "$flags" == *apxs*  ]];then
-            log "backUpSo $suffix"
-            backUpSo $suffix
-        fi
-
-        log "php.ini-development ${TARGET_DIR}${suffix}/lib/php.ini"
-        cp php.ini-development ${TARGET_DIR}${suffix}/lib/php.ini
-        info "result-success: $suffix with $flags"
     done
+
+}	# ----------  end of function check_dir  ----------
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  check_file
+#   DESCRIPTION:  download if not exists
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+check_file ()
+{
+    for php_version in $PHP_VERSION_LIST; do
+        mirror=`echo $PHP_MIRROR | sed -n "s/{VERSION}/$php_version"/p`
+        download $PHP_SRC_DIR php-${php_version}.tar.gz $mirror
+    done
+}	# ----------  end of function check_file  ----------
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  check_libs
+#   DESCRIPTION:  install libs if not installed
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+check_libs()
+{
+    for lib in $LIB
+    do
+        log "check $lib"
+        rpm -q $lib>/dev/null 2>&1
+        if [ $? != 0 ];then
+            exec_cmd "yum -y install $lib"
+        fi
+        info "ok"
+    done
+}	# ----------  end of function check_libs  ----------
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  backup_so
+#   DESCRIPTION:  backup libphp[57].so for apache
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+backup_so()
+{
+    version_ts=$1
+    main_version=`echo $version_ts | cut -d "." -f1`
+    module_dir=${APACHE_DIR}modules
+    php_so=libphp${main_version}.so
+
+    exec_cmd "cp $module_dir/$php_so $SO_DIR${version_ts}.so"
 }
 
-#遍历php版本并执行安装
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  install
+#   DESCRIPTION:  install php
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
 install ()
 {
+    check_libs
+    check_file
     #待安装的php目录列表
-    TO_INSALL_LIST=`ls $PHP_SRC_DIR | grep "tar.gz" | grep -E "$1"`
+    TO_INSALL_VERSION_LIST=`echo $PHP_VERSION_LIST | grep -E "$1"`
 
-    for php in $TO_INSALL_LIST
+    for version in $TO_INSALL_VERSION_LIST
     do
-        log "cd $PHP_SRC_DIR"
-        cd $PHP_SRC_DIR
+        exec_cmd "cd ${PHP_SRC_DIR}php-$version"
+        #zts flag
+        for zts in $zts_flag
+        do
+            #remove apache flag if php_version=5.3
+            if [ `echo $version | cut -d "." -f1,2` == "5.3" ];then
+                flags=`echo $PHP_INSTALL_FLAGS | sed -n "s/--with-apxs2=\\/data\\/software\\/apache\\/bin\\/apxs//p"`
+            else
+                flags="$PHP_INSTALL_FLAGS"
+            fi
 
-        dirname=${php%.tar*}
-        if [ -d "$dirname" ];then
-            log "remove $dirname if exists"
-            log "rm -rf $dirname"
-            rm -rf $dirname
-        fi
+            #replace space back
+            flags=`echo "$flags $zts" | sed "s/"$SPLIT"/ /g"  | sed 's/ \+/ /g'`
 
-        log "untar $php"
-        tar zxf $php
-        version=`echo $dirname|cut -d '-' -f2`
+            if [[ ! -z `echo "$flags" | grep "zts"` ]];then
+                version_ts=${version}_zts
+            else
+                version_ts=${version}_nts
 
-        log "cd $PHP_SRC_DIR$dirname"
-        cd $PHP_SRC_DIR$dirname
-        runMake "$version"
+            fi
+
+            make distclean>/dev/null 2>&1
+            exec_cmd "./configure --prefix=${PHP_SOFTWARE_DIR}${version_ts} $flags"
+            exec_cmd "sed -i 's/-g /-ggdb3 /g' Makefile"
+            exec_cmd "make"
+            #remove php installed dir if exists
+            if [ -d "${PHP_SOFTWARE_DIR}${version_ts}" ];then
+                exec_cmd "rm -rf ${PHP_SOFTWARE_DIR}${version_ts}"
+            fi
+
+            #backup libphp[57].so if created
+            exec_cmd "make install"
+            if [[ ! -z "`echo $flags|grep apxs`"  ]];then
+                exec_cmd "backup_so $version_ts"
+            fi
+
+            exec_cmd "cp php.ini-development ${PHP_SOFTWARE_DIR}${version_ts}/lib/php.ini"
+            info "result-success: $version_ts with $flags"
+        done
     done
 }
 
+check_dir
+
+#execute the command
 case $1 in
     "i" | "install")
         install $2
