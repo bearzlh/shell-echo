@@ -33,19 +33,23 @@ PHP_SOFTWARE_DIR=/data/software/php/
 #extension source dir
 MODULE_DIR=/data/src/module/
 
+
+
 #---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  install
-#   DESCRIPTION:  module install
-#    PARAMETERS:  $1:module name;$2 php version
+#          NAME:  check_version
+#   DESCRIPTION:  dump which version to install
+#    PARAMETERS:  
 #       RETURNS:  
 #-------------------------------------------------------------------------------
-install(){
+check_version ()
+{
+    log "deal as follows"
     #param process
     filter_module="$1"
     filter_php="$2"
 
     #extension filter
-    if [ ! -z "filter_module" ];then
+    if [ -d $MODULE_DIR -a ! -z "filter_module" ];then
         MODULE_NAMES=`ls $MODULE_DIR|grep -E "$filter_module"`
     fi
 
@@ -67,27 +71,81 @@ install(){
 
     for php in $PHP_SOFTWARE_LIST
     do
-        #php version
+        module_names=$MODULE_NAMES
         version=`echo $php|cut -d '_' -f1`
         php_dir=${PHP_SRC_DIR}php-${version}/
-        php_ext_dir=$php_dir/ext
+        php_software_dir=$PHP_SOFTWARE_DIR$php/
+        php_ext_dir=${php_dir}ext/
 
-        exec_cmd "cd $php_ext_dir"
+        if [ -z $module_names ] ; then
+            module_names=`ls $php_ext_dir | grep -E "$filter_module"`
+        fi
+        info "$php:`echo $module_names | xargs`"
+    done
+}	# ----------  end of function check_version  ----------
 
-        if [ -z $MODULE_NAMES ] ; then
-            MODULE_NAMES=`ls | grep -E "$filter_module"`
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  install
+#   DESCRIPTION:  module install
+#    PARAMETERS:  $1:module name;$2 php version
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+install(){
+    #param process
+    filter_module="$1"
+    filter_php="$2"
+
+    #extension filter
+    if [ -d $MODULE_DIR -a ! -z "filter_module" ];then
+        MODULE_NAMES=`ls $MODULE_DIR|grep -E "$filter_module"`
+    fi
+
+    grep_version=
+    grep_zts=
+
+    #version and zts filter
+    if [ ! -z "$filter_php" ];then
+        if [ -z "`echo $filter_php | grep '-'`" ];then
+            grep_version=$filter_php
         else
-            for check_module in $MODULE_NAMES; do
-                if [ -d "$check_module" ] ; then
-                    exec_cmd "rm -rf $check_module"
+            grep_version=`echo $filter_php|cut -d '-' -f1`
+            grep_zts=`echo $filter_php|cut -d '-' -f2`
+        fi
+    fi
+
+    #filter php and zts type
+    PHP_SOFTWARE_LIST=`ls $PHP_SOFTWARE_DIR | grep "$grep_version" | grep "$grep_zts"`
+
+    for php in $PHP_SOFTWARE_LIST
+    do
+        log "install for $php"
+
+        module_names=$MODULE_NAMES
+        version=`echo $php|cut -d '_' -f1`
+        php_dir=${PHP_SRC_DIR}php-${version}/
+        php_software_dir=$PHP_SOFTWARE_DIR$php/
+        php_ext_dir=${php_dir}ext/
+
+        if [ -z $module_names ] ; then
+            module_names=`ls $php_ext_dir | grep -E "$filter_module"`
+        else
+            for check_module in $module_names; do
+                if [ -d "$php_ext_dir$check_module" ] ; then
+                    exec_cmd "rm -rf $php_ext_dir$check_module"
                 fi
 
-                exec_cmd "cp -r $MODULE_DIR$check_module ."
+                exec_cmd "cp -r $MODULE_DIR$check_module $php_ext_dir$check_module"
             done
         fi
 
+
+        if [ -z $module_names ] ; then
+            error "module names not found;continue"
+            continue
+        fi
+
         #traversal extension dirs
-        for MODULE_NAME in $MODULE_NAMES
+        for MODULE_NAME in $module_names
         do
             php_module_dir=$php_ext_dir$MODULE_NAME
 
@@ -95,9 +153,9 @@ install(){
 
             make distclean >> /dev/null 2>&1
 
-            exec_cmd "${PHP_SOFTWARE_DIR}bin/phpize"
+            exec_cmd "${php_software_dir}bin/phpize"
 
-            exec_cmd "./configure --with-php-config=${PHP_SOFTWARE_DIR}bin/php-config"
+            exec_cmd "./configure --with-php-config=${php_software_dir}bin/php-config"
 
             #gdb debug
             exec_cmd "sed -i 's/-g /-g3 -gdwarf-2 /g' Makefile"
@@ -106,7 +164,7 @@ install(){
             
             exec_cmd "make install"
 
-            ini_file=`${PHP_SOFTWARE_DIR}bin/php --ini | sed -n '2p'|awk '{print $NF}'`
+            ini_file=`${php_software_dir}bin/php --ini | sed -n '2p'|awk '{print $NF}'`
 
             #check php.ini
             exec_cmd "[ -f  $ini_file ]"
@@ -121,11 +179,11 @@ install(){
 
             #add config from file init.tpl if the file exists otherwise add so config only
             if [ -f init.tpl ];then
-                exec_cmd "sed -i '$r init.tpl' $ini_file"
+                exec_cmd "sed -i '\$r init.tpl' $ini_file"
             else
-                exec_cmd "sed -i -e '$a'extension=${MODULE_NAME}.so $ini_file"
+                exec_cmd "sed -i -e '\$a'extension=${MODULE_NAME}.so $ini_file"
             fi
-            info "result-success->$php_installed"
+            info "result-success->$php"
         done
     done
 
@@ -193,14 +251,22 @@ test ()
 
 #命令列表
 case $1 in
+    #install modules
     "install"|"i")
         install "$2" "$3"
         ;;
 
+    #check which php version and which module will be dealed
+    "check"|"c")
+        check_version "$2" "$3"
+        ;;
+
+    #restart php-fpm
     "restart")
         restart $2
         ;;
 
+    #test smart_agent
     "test")
         test $2
         ;;
