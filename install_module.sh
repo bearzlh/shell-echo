@@ -31,7 +31,7 @@ PHP_SRC_DIR=/data/src/php/
 PHP_SOFTWARE_DIR=/data/software/php/
 
 #extension source dir
-MODULE_DIR=/data/src/module/
+MODULE_DIR=/data/src/module7/
 
 
 
@@ -126,7 +126,7 @@ install(){
         php_software_dir=$PHP_SOFTWARE_DIR$php/
         php_ext_dir=${php_dir}ext/
 
-        if [ -z $module_names ] ; then
+        if [ -z "$module_names" ] ; then
             module_names=`ls $php_ext_dir | grep -E "$filter_module"`
         else
             for check_module in $module_names; do
@@ -139,7 +139,7 @@ install(){
         fi
 
 
-        if [ -z $module_names ] ; then
+        if [ -z "$module_names" ] ; then
             error "module names not found;continue"
             continue
         fi
@@ -200,7 +200,7 @@ install(){
 get_file_modified_time ()
 {
     path="$1"
-    exec_cmd "[ -f $path ]"
+    valid "[ -f $path ]"
     echo `stat $1 | sed -n "7p"|cut -d " " -f2`
 }
 
@@ -216,7 +216,11 @@ restart()
     if [ -z $php_fpm ] ; then
         php_fpm=php_fpm
     fi
-    killall php-fpm
+    
+    if [ ! -z "`ps -e|grep php-fpm|grep -v grep`" ] ; then
+        exec_cmd "killall php-fpm"
+    fi
+    killall php-fpm > /dev/null 2>&1
     
     exec_cmd "$php_fpm"
 }
@@ -235,17 +239,23 @@ test ()
 
     for version in $test_list; do
         log_path="/data/log/phpagent/trace_data.json"
-        restart ${PHP_SOFTWARE_DIR}php-${version}/sbin/php-fpm
+        restart ${PHP_SOFTWARE_DIR}${version}/sbin/php-fpm
 
         time_pre=`get_file_modified_time $log_path`
-        exec_cmd "curl 'http://192.168.100.100/admin/student/index?sort=id&order=desc&offset=0&limit=10&_=1527844738037' -H 'Cookie: thinkphp_show_page_trace=0|0; thinkphp_show_page_trace=0|0; PHPSESSID=bui9a3omlap0chtt9k1nuin51j; XDEBUG_SESSION=IDEKEY; keeplogin=1%7C86400%7C1527931135%7C7e3e73afb96824b6c95fcc50f181ae36' -H 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36' -H 'Content-Type: application/json' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://192.168.100.100/admin/student?addtabs=1' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' --compressed >> /dev/null"
+        valid "curl 'http://192.168.100.100/admin/student/index?sort=id&order=desc&offset=0&limit=10&_=1527844738037' -H 'Cookie: thinkphp_show_page_trace=0|0; thinkphp_show_page_trace=0|0; PHPSESSID=bui9a3omlap0chtt9k1nuin51j; XDEBUG_SESSION=IDEKEY; keeplogin=1%7C86400%7C1527931135%7C7e3e73afb96824b6c95fcc50f181ae36' -H 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36' -H 'Content-Type: application/json' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://192.168.100.100/admin/student?addtabs=1' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' --compressed >> /dev/null 2>&1"
         time_end=`get_file_modified_time $log_path`
 
-        exec_cmd "[ $time_pre != $time_end ]"
+        valid "test $time_pre -eq $time_end"
+        if [ "$time_pre" == "$time_end" ] ; then
+            error "file not modified;exit"
+            exit
+        fi
 
-        exec_cmd "cat $log_path | jq ."
+        valid "cat $log_path | jq ."
 
-        exec_cmd "[[ `cat $log_path | jq . | grep array | uniq | wc -l` == 1 ]]"
+        valid "[[ `cat $log_path | jq . | grep array | uniq | wc -l` == 1 ]]"
+
+        info "result-sucess:test $version ok"
     done
 }
 

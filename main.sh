@@ -88,23 +88,40 @@ error()
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  exec_cmd
-#   DESCRIPTION:  execute shell command,exit if error
-#    PARAMETERS:  command
+#   DESCRIPTION:  run shell command,exit if error
+#    PARAMETERS:  valid the result and return
 #       RETURNS:  
 #-------------------------------------------------------------------------------
 exec_cmd ()
 {
-    cmd="$@"
-    log "execute:$cmd"
+    cmd="$1"
+    log "run:$cmd"
     eval $cmd >> $LOG 2>&1
 
     if [ $? != 0 ] ; then
         error "result-error:cmd->$cmd,look $LOG for help"
         exit
-    else
-        info "ok"
     fi
 }	# ----------  end of function exec_cmd  ----------
+
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  valid
+#   DESCRIPTION:  
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+valid ()
+{
+    cmd="$1"
+    eval $cmd >> $LOG 2>&1
+
+    if [ $? != 0 ] ; then
+        error "result-error:cmd->$cmd,look $LOG for help"
+        exit
+    fi
+}	# ----------  end of function valid  ----------
 
 
 #---  FUNCTION  ----------------------------------------------------------------

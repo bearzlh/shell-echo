@@ -138,6 +138,10 @@ install_vim ()
     exec_cmd "make install"
     exec_cmd "cp ${SRC_DIR}vim-for-c/.vimrc ~/"
     exec_cmd "vim +PluginInstall +qall"
+    #deal with bashdb plugin bug
+    exec_cmd "sed -i 's/^\s\+call mmtoolbox#tools#Load/\"&/p' ~/.vim/bundle/bash-support/plugin/bash-support.vim"
+    exec_cmd "sed -i '/mmtoolbox/d'"
+    exec_cmd "sed -i '$aso ~/.vim/bundle/bash-support/autoload/mmtoolbox/bash/*"
 }	# ----------  end of function install_vim  ----------
 
 
