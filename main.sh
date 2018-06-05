@@ -100,7 +100,7 @@ exec_cmd ()
 
     if [ $? != 0 ] ; then
         error "result-error:cmd->$cmd,look $LOG for help"
-        exit
+        exit 1
     fi
 }	# ----------  end of function exec_cmd  ----------
 
@@ -119,7 +119,7 @@ valid ()
 
     if [ $? != 0 ] ; then
         error "result-error:cmd->$cmd,look $LOG for help"
-        exit
+        exit 1
     fi
 }	# ----------  end of function valid  ----------
 

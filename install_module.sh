@@ -147,43 +147,49 @@ install(){
         #traversal extension dirs
         for MODULE_NAME in $module_names
         do
-            php_module_dir=$php_ext_dir$MODULE_NAME
+            (
+                php_module_dir=$php_ext_dir$MODULE_NAME
 
-            exec_cmd "cd $php_module_dir"
+                exec_cmd "cd $php_module_dir"
 
-            make distclean >> /dev/null 2>&1
+                make distclean >> /dev/null 2>&1
 
-            exec_cmd "${php_software_dir}bin/phpize"
+                exec_cmd "${php_software_dir}bin/phpize"
 
-            exec_cmd "./configure --with-php-config=${php_software_dir}bin/php-config"
+                exec_cmd "./configure --with-php-config=${php_software_dir}bin/php-config"
 
-            #gdb debug
-            exec_cmd "sed -i 's/-g /-g3 -gdwarf-2 /g' Makefile"
+                #gdb debug
+                exec_cmd "sed -i 's/-g /-g3 -gdwarf-2 /g' Makefile"
 
-            exec_cmd "make"
+                exec_cmd "make"
+                
+                exec_cmd "make install"
+
+                ini_file=`${php_software_dir}bin/php --ini | sed -n '2p'|awk '{print $NF}'`
+
+                #check php.ini
+                exec_cmd "[ -f  $ini_file ]"
+
+                #remove old config
+                exec_cmd "sed -i -e "/$MODULE_NAME/d" $ini_file"
+
+                #add timezone if empty
+                if [ -z `cat $ini_file|grep "^date.timezone"|cut -d '=' -f2` ];then
+                    exec_cmd "sed -i 's/;date.timezone.*/date.timezone=PRC/' $ini_file"
+                fi
+
+                #add config from file init.tpl if the file exists otherwise add so config only
+                if [ -f init.tpl ];then
+                    exec_cmd "sed -i '\$r init.tpl' $ini_file"
+                else
+                    exec_cmd "sed -i -e '\$a'extension=${MODULE_NAME}.so $ini_file"
+                fi
+                info "result-success->$php"
+            )
             
-            exec_cmd "make install"
-
-            ini_file=`${php_software_dir}bin/php --ini | sed -n '2p'|awk '{print $NF}'`
-
-            #check php.ini
-            exec_cmd "[ -f  $ini_file ]"
-
-            #remove old config
-            exec_cmd "sed -i -e "/$MODULE_NAME/d" $ini_file"
-
-            #add timezone if empty
-            if [ -z `cat $ini_file|grep "^date.timezone"|cut -d '=' -f2` ];then
-                exec_cmd "sed -i 's/;date.timezone.*/date.timezone=PRC/' $ini_file"
+            if [ $? != 0 ] ; then
+                continue
             fi
-
-            #add config from file init.tpl if the file exists otherwise add so config only
-            if [ -f init.tpl ];then
-                exec_cmd "sed -i '\$r init.tpl' $ini_file"
-            else
-                exec_cmd "sed -i -e '\$a'extension=${MODULE_NAME}.so $ini_file"
-            fi
-            info "result-success->$php"
         done
     done
 
@@ -238,24 +244,26 @@ test ()
     test_list=`ls $PHP_SOFTWARE_DIR | grep -E "$1"`
 
     for version in $test_list; do
-        log_path="/data/log/phpagent/trace_data.json"
-        restart ${PHP_SOFTWARE_DIR}${version}/sbin/php-fpm
+        (
+            log_path="/data/log/phpagent/trace_data.json"
+            restart ${PHP_SOFTWARE_DIR}${version}/sbin/php-fpm
 
-        time_pre=`get_file_modified_time $log_path`
-        valid "curl 'http://192.168.100.100/admin/student/index?sort=id&order=desc&offset=0&limit=10&_=1527844738037' -H 'Cookie: thinkphp_show_page_trace=0|0; thinkphp_show_page_trace=0|0; PHPSESSID=bui9a3omlap0chtt9k1nuin51j; XDEBUG_SESSION=IDEKEY; keeplogin=1%7C86400%7C1527931135%7C7e3e73afb96824b6c95fcc50f181ae36' -H 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36' -H 'Content-Type: application/json' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://192.168.100.100/admin/student?addtabs=1' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' --compressed >> /dev/null 2>&1"
-        time_end=`get_file_modified_time $log_path`
+            time_pre=`get_file_modified_time $log_path`
+            valid "curl 'http://192.168.100.100/admin/student/index?sort=id&order=desc&offset=0&limit=10&_=1527844738037' -H 'Cookie: thinkphp_show_page_trace=0|0; thinkphp_show_page_trace=0|0; PHPSESSID=bui9a3omlap0chtt9k1nuin51j; XDEBUG_SESSION=IDEKEY; keeplogin=1%7C86400%7C1527931135%7C7e3e73afb96824b6c95fcc50f181ae36' -H 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36' -H 'Content-Type: application/json' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://192.168.100.100/admin/student?addtabs=1' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' --compressed >> /dev/null 2>&1"
+            time_end=`get_file_modified_time $log_path`
 
-        valid "test $time_pre -eq $time_end"
-        if [ "$time_pre" == "$time_end" ] ; then
-            error "file not modified;exit"
-            exit
+            valid "test $time_pre -eq $time_end"
+
+            valid "cat $log_path | jq ."
+
+            valid "[[ `cat $log_path | jq . | grep array | uniq | wc -l` == 1 ]]"
+
+            info "result-sucess:test $version ok"
+        )
+        
+        if [ $? != 0 ] ; then
+            continue
         fi
-
-        valid "cat $log_path | jq ."
-
-        valid "[[ `cat $log_path | jq . | grep array | uniq | wc -l` == 1 ]]"
-
-        info "result-sucess:test $version ok"
     done
 }
 
