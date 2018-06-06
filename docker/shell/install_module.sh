@@ -28,7 +28,7 @@ LOG=/data/log/module_install
 PHP_SOFTWARE_DIR=/data/software/php/
 
 #extension source dir
-MODULE_DIR=/data/module/
+MODULE_DIR=/data/modules/
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  check_version

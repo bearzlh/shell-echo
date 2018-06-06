@@ -1,4 +1,4 @@
-from base-latest
+from centos
 
 MAINTAINER bearzlh bear.zheng@yunzhihui.com
 
