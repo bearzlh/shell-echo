@@ -160,11 +160,10 @@ check_libs()
     libs="$1"
     for lib in $libs
     do
-        log "check $lib"
         rpm -q $lib>/dev/null 2>&1
         if [ $? != 0 ];then
+            log "$lib required"
             exec_cmd "yum -y install $lib"
         fi
-        info "ok"
     done
 }	# ----------  end of function check_libs  ----------
