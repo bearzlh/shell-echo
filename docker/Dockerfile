@@ -3,7 +3,7 @@ from base-latest
 MAINTAINER bearzlh bear.zheng@yunzhihui.com
 
 COPY ./shell /opt
-COPY ./modules /data/
+COPY ./modules /data/modules/
 WORKDIR /opt
 
 ENV PHP_VERSIONS="5.4.45" \
