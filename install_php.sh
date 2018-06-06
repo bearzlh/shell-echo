@@ -6,7 +6,7 @@ source ./main.sh
 
 LIB='libjpeg-turbo-devel libmcrypt-devel libpng-devel libmcrypt-devel openssl-devel mariadb-devel'
 
-PHP_VERSION_LIST="5.3.29 5.4.45 5.5.38 5.6.34 7.2.5"
+PHP_VERSION_LIST="5.3.29 5.4.45 5.5.38 5.6.34 7.0.4 7.1.15 7.2.5"
 
 PHP_MIRROR=http://cn2.php.net/get/php-{VERSION}.tar.gz/from/this/mirror
 
@@ -20,7 +20,7 @@ PHP_SOFTWARE_DIR='/data/software/php/'
 LOG=/data/log/install_php
 
 #dir to backup libphp[57].so
-SO_DIR='/data/so_dir/'
+SO_DIR='/data/software/apache/modules/'
 
 #apache dir
 APACHE_DIR='/data/software/apache/'
@@ -35,6 +35,16 @@ SPLIT='||'
 zts_flag="--enable-maintainer-zts ${SPLIT}"
 
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  get_install_version
+#   DESCRIPTION:  
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+get_install_version ()
+{
+    echo $PHP_VERSION_LIST| sed -n 's/ /\n/gp' | grep -E "$1"
+}	# ----------  end of function get_install_version  ----------
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  check_dir
 #   DESCRIPTION:  create dir if not exists
@@ -61,7 +71,8 @@ check_dir ()
 #-------------------------------------------------------------------------------
 check_file ()
 {
-    for php_version in $PHP_VERSION_LIST; do
+    version_list=`get_install_version $1`
+    for php_version in $version_list; do
         mirror=`echo $PHP_MIRROR | sed -n "s/{VERSION}/$php_version"/p`
         download $PHP_SRC_DIR php-${php_version}.tar.gz $mirror
     done
@@ -113,9 +124,9 @@ backup_so()
 install ()
 {
     check_libs
-    check_file
+    check_file $1
     #待安装的php目录列表
-    TO_INSALL_VERSION_LIST=`echo $PHP_VERSION_LIST | grep -E "$1"`
+    TO_INSALL_VERSION_LIST=`get_install_version $1`
 
     for version in $TO_INSALL_VERSION_LIST
     do
@@ -161,6 +172,19 @@ install ()
     done
 }
 
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  check
+#   DESCRIPTION:  
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+check ()
+{
+    TO_INSALL_VERSION_LIST=`get_install_version $1`
+    info "install as follows:`echo $TO_INSALL_VERSION_LIST | xargs`"
+}	# ----------  end of function check  ----------
+
 check_dir
 
 #execute the command
@@ -169,8 +193,13 @@ case $1 in
         install $2
         ;;
 
+    "c" | "check")
+        check $2
+        ;;
+
     *)
-        log "./install_php.sh (i)nstall"
+        print_info "Usage:   ./$0 (i)nstall [php version]"
+        print_info "\t ./$0 (c)heck [php version] (dump info,not install)"
         ;;
 
     esac

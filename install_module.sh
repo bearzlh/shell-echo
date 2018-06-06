@@ -50,7 +50,7 @@ check_version ()
 
     #extension filter
     if [ -d $MODULE_DIR -a ! -z "filter_module" ];then
-        MODULE_NAMES=`ls $MODULE_DIR|grep -E "$filter_module"`
+        MODULE_NAMES=`ls $MODULE_DIR|grep -E "^$filter_module$"`
     fi
 
     grep_version=
@@ -97,7 +97,7 @@ install(){
 
     #extension filter
     if [ -d $MODULE_DIR -a ! -z "filter_module" ];then
-        MODULE_NAMES=`ls $MODULE_DIR|grep -E "$filter_module"`
+        MODULE_NAMES=`ls $MODULE_DIR|grep -E "^$filter_module$"`
     fi
 
     grep_version=
@@ -234,7 +234,7 @@ restart()
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  test
 #   DESCRIPTION:  test smart_agent
-#    PARAMETERS:  php version
+#    PARAMETERS:  $1:php version;$2:if nginx
 #       RETURNS:  
 #-------------------------------------------------------------------------------
 test ()
@@ -244,49 +244,98 @@ test ()
     test_list=`ls $PHP_SOFTWARE_DIR | grep -E "$1"`
 
     for version in $test_list; do
-        (
-            log_path="/data/log/phpagent/trace_data.json"
-            restart ${PHP_SOFTWARE_DIR}${version}/sbin/php-fpm
-
-            time_pre=`get_file_modified_time $log_path`
-            valid "curl 'http://192.168.100.100/admin/student/index?sort=id&order=desc&offset=0&limit=10&_=1527844738037' -H 'Cookie: thinkphp_show_page_trace=0|0; thinkphp_show_page_trace=0|0; PHPSESSID=bui9a3omlap0chtt9k1nuin51j; XDEBUG_SESSION=IDEKEY; keeplogin=1%7C86400%7C1527931135%7C7e3e73afb96824b6c95fcc50f181ae36' -H 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36' -H 'Content-Type: application/json' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://192.168.100.100/admin/student?addtabs=1' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' --compressed >> /dev/null 2>&1"
-            time_end=`get_file_modified_time $log_path`
-
-            valid "test $time_pre -eq $time_end"
-
-            valid "cat $log_path | jq ."
-
-            valid "[[ `cat $log_path | jq . | grep array | uniq | wc -l` == 1 ]]"
-
-            info "result-sucess:test $version ok"
-        )
-        
-        if [ $? != 0 ] ; then
-            continue
+        log "test for $version"
+        if [ -z "$2" ] ; then
+            ( test_nginx $version )
+        else
+            ( test_apache $version )
         fi
     done
 }
 
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  test_nginx
+#   DESCRIPTION:  
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+test_nginx ()
+{
+    version=$1
+    log_path="/data/log/phpagent/trace_data.json"
+    restart ${PHP_SOFTWARE_DIR}${version}/sbin/php-fpm
+
+    time_pre=`get_file_modified_time $log_path`
+    valid "curl 'http://dev.admin.com/admin/student/index?sort=id&order=desc&offset=0&limit=10&_=1527844738037' -H 'Cookie: thinkphp_show_page_trace=0|0; thinkphp_show_page_trace=0|0; PHPSESSID=bui9a3omlap0chtt9k1nuin51j; XDEBUG_SESSION=IDEKEY; keeplogin=1%7C86400%7C1527931135%7C7e3e73afb96824b6c95fcc50f181ae36' -H 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36' -H 'Content-Type: application/json' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://dev.admin.com/admin/student?addtabs=1' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' --compressed >> /dev/null 2>&1"
+    time_end=`get_file_modified_time $log_path`
+
+    valid "test $time_pre -neq $time_end"
+
+    valid "cat $log_path | jq ."
+
+    valid "[[ `cat $log_path | jq . | grep array | uniq | wc -l` == 1 ]]"
+
+    info "result-sucess:test $version ok"
+}	# ----------  end of function test_nginx  ----------
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  test_apache
+#   DESCRIPTION:  
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+test_apache ()
+{
+    version=$1
+    log_path="/data/log/phpagent/trace_data.json"
+    main_php_version=`echo $version | cut -d '.' -f1`
+    valid "sed -i \"/php[57]_module/d\" /data/software/apache/conf/httpd.conf"
+    valid "sed -i -e '\$aLoadModule php${main_php_version}_module modules/${version}.so' /data/software/apache/conf/httpd.conf"
+    valid "/data/software/apache/bin/apachectl restart"
+
+    time_pre=`get_file_modified_time $log_path`
+    valid "curl 'http://dev.admin.com:81/admin/student/index?sort=id&order=desc&offset=0&limit=10&_=1527844738037' -H 'Cookie: thinkphp_show_page_trace=0|0; thinkphp_show_page_trace=0|0; PHPSESSID=bui9a3omlap0chtt9k1nuin51j; XDEBUG_SESSION=IDEKEY; keeplogin=1%7C86400%7C1527931135%7C7e3e73afb96824b6c95fcc50f181ae36' -H 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36' -H 'Content-Type: application/json' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://dev.admin.com:81/admin/student?addtabs=1' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' --compressed >> /dev/null 2>&1"
+    time_end=`get_file_modified_time $log_path`
+
+    valid "test $time_pre -neq $time_end"
+
+    valid "cat $log_path | jq ."
+
+    valid "[[ `cat $log_path | jq . | grep array | uniq | wc -l` == 1 ]]"
+
+    info "result-sucess:test $version ok"
+}	# ----------  end of function test_apache  ----------
+
 #命令列表
 case $1 in
     #install modules
-    "install"|"i")
+    "install" | "i")
         install "$2" "$3"
         ;;
 
     #check which php version and which module will be dealed
-    "check"|"c")
+    "check" | "c")
         check_version "$2" "$3"
         ;;
 
     #restart php-fpm
-    "restart")
+    "restart" | "r")
         restart $2
         ;;
 
     #test smart_agent
-    "test")
-        test $2
+    "test" | "t")
+        test $2 $3
         ;;
 
+    *)
+        print_info "Usage:   ./$0 (i)nstall [module_name] [php version]"
+        print_info "\t ./$0 (c)heck [module_name] [php version] **dump info,not install"
+        print_info "\t ./$0 (r)estart [php-fpm path]"
+        print_info "\t ./$0 (t)est [php version] **only for smart_agent"
+
+        ;;
 esac

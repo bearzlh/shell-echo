@@ -53,6 +53,20 @@ log_message ()
    
 }	# ----------  end of function log_message  ----------
 
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  print_message
+#   DESCRIPTION:  
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+print_message ()
+{
+    color=`pattern $2`
+    off=`pattern off`
+    echo -e "${color}$1${off}"
+}	# ----------  end of function output  ----------
+
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  log
 #   DESCRIPTION:  debug information
@@ -105,6 +119,17 @@ exec_cmd ()
 }	# ----------  end of function exec_cmd  ----------
 
 
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  print_info
+#   DESCRIPTION:  print message on the screen
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+print_info ()
+{
+    print_message "$*" ffcgreen
+}	# ----------  end of function print_info  ----------
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  valid
