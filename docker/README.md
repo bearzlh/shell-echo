@@ -1,6 +1,6 @@
 ##脚本说明
 ```
-from base-latest
+from base-centos7
 
 MAINTAINER bearzlh bear.zheng@yunzhihui.com
 
