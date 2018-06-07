@@ -34,9 +34,9 @@ if [ ! -z "$NGINX_VERSION" ] ; then
 fi
 
 
-if [ ! -z "$PHP_VERSIONS" ] ; then
-    first=`echo $PHP_VERSIONS|cut -d " " -f1`
-    $SOFTWARE_DIR/$first/sbin/php-fpm
+if [ ! -z "`ls $SOFTWARE_DIR/php`" ] ; then
+    first=`ls $SOFTWARE_DIR/php | sed -n '1p'`
+    $SOFTWARE_DIR/php/$first/sbin/php-fpm
 fi
 
 if [ ! -z "$path" ] ; then
