@@ -21,9 +21,14 @@ THREAD=10
 
 build ()
 {
-    cp "./config/$1" ./Dockerfile
-    docker build -t $1 .
+    if [ -z "`docker images|grep $1`" ] ; then
+        cp "./config/$1" ./Dockerfile
+        docker build -t $1 . >> ./build_log/${1}.log
+    else
+        echo "$1 has been builded,continue" >> ./build_log/${1}.log
+    fi
 }	# ----------  end of function test  ----------
+
 export -f build
 
 parallel -j $THREAD build ::: `ls ./config/`
