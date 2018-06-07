@@ -6,7 +6,7 @@ COPY ./shell /opt
 COPY ./data /data
 WORKDIR /opt
 
-ENV PHP_VERSIONS="7.1.17" \
+ENV PHP_VERSIONS="7.2.5" \
 ZTS_FLAGS="zts nts" \
 IF_FPM="1" \
 IF_APACHE="" \
