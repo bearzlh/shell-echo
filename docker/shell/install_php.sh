@@ -163,7 +163,7 @@ check_dir
 case $1 in
     "i" | "install")
         if [ -z "$PHP_VERSIONS" ] ; then
-            error "php will not be installed with php version empty"
+            info "php will not be installed with php version empty"
         else
             install $2
         fi

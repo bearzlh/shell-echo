@@ -21,7 +21,7 @@ INSTALL_LIST="APR APR_UTIL APACHE"
 
 
 if [ -z "$APACHE_VERSION" ] ; then
-    error "apache will not be installed with apache version empty"
+    info "apache will not be installed with apache version empty"
     exit
 fi
 

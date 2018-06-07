@@ -82,7 +82,7 @@ install ()
 case $1 in
     "i" | "install")
         if [ -z "$NGINX_VERSION" ] ; then
-            error "nginx will not be installed with nginx version empty"
+            info "nginx will not be installed with nginx version empty"
         else
             check_libs "$LIBS"
             install
