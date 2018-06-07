@@ -139,6 +139,18 @@ install ()
                 exec_cmd "backup_so $version_ts"
             fi
 
+            #php-fpm
+            if [[ ! -z "`echo $flags|grep fpm`"  ]] ; then
+                main_version=`echo $version_ts | cut -d "." -f1`
+                if [ "$main_version" == "5" ] ; then
+                    exec_cmd "cp ${PHP_SOFTWARE_DIR}${version_ts}/etc/php-fpm.conf.default ${PHP_SOFTWARE_DIR}${version_ts}/etc/php-fpm.conf"
+                else
+                    exec_cmd "cp ${PHP_SOFTWARE_DIR}${version_ts}/etc/php-fpm.conf.default ${PHP_SOFTWARE_DIR}${version_ts}/etc/php-fpm.conf"
+                    exec_cmd "cp ${PHP_SOFTWARE_DIR}${version_ts}/etc/php-fpm.d/www.conf.default ${PHP_SOFTWARE_DIR}${version_ts}/etc/php-fpm.d/www.conf"
+                fi
+                
+            fi
+
             exec_cmd "cp php.ini-development ${PHP_SOFTWARE_DIR}${version_ts}/lib/php.ini"
             info "result-success: $version_ts with $flags"
         done

@@ -110,7 +110,7 @@ install(){
         version=`echo $php|cut -d '_' -f1`
 
         if [ -z "$module_names" ] ; then
-            error "module names not found;continue"
+            info "module names not found;continue"
             continue
         fi
         php_software_dir="$PHP_SOFTWARE_DIR$php/"

@@ -107,6 +107,10 @@ install()
         exec_cmd "make"
 
         exec_cmd "make install"
+        
+        if [ $file == "APACHE" -a -d "${SRC_DIR}conf/apache" ] ; then
+            exec_cmd "cp -r ${SRC_DIR}conf/apache/* ${prefix}/conf/"
+        fi
 
         info "installed $dir successful with path of `dirname $prefix`"
     done

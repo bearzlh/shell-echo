@@ -71,6 +71,11 @@ install ()
     exec_cmd "make"
     exec_cmd "make install"
 
+    
+    if [ -d "${SRC_DIR}conf/nginx" ] ; then
+        exec_cmd "cp -r ${SRC_DIR}conf/nginx/* ${NGINX_PREFIX}/conf/"
+    fi
+
     info "installed $dir successful with path:`dirname $NGINX_PREFIX`"
 }	# ----------  end of function install  ----------
 
