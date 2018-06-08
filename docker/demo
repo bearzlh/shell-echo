@@ -14,7 +14,8 @@ APACHE_VERSION="" \
 APACHE_FLAG="" \
 APR_VERSION="1.6.3" \
 APR_UTIL_VERSION="1.6.1" \
-NGINX_VERSION="1.14.0"
+NGINX_VERSION="1.14.0" \
+MODULE_DIR_NAME=""
 
 RUN \
 yum -y install epel-release && \

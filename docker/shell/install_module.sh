@@ -27,8 +27,13 @@ LOG=/data/log/module_install
 #php installed dir
 PHP_SOFTWARE_DIR=/data/software/php/
 
-#extension source dir
-MODULE_DIR=/data/modules/
+
+if [ ! -z "$MODULE_DIR_NAME" ] ; then
+    MODULE_DIR=/data/modules/$MODULE_DIR_NAME/
+else
+    MODULE_DIR=/data/modules/
+fi
+
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  check_version
@@ -44,8 +49,11 @@ check_version ()
     filter_php="$2"
 
     #extension filter
-    if [ -d $MODULE_DIR -a ! -z "filter_module" ];then
+    if [ -d $MODULE_DIR ];then
         MODULE_NAMES=`ls $MODULE_DIR|grep -E "$filter_module"`
+    else
+        exec_cmd "echo $MODULE_DIR INVALID"
+        exit 0
     fi
 
     grep_version=
@@ -82,8 +90,15 @@ install(){
     filter_php="$2"
 
     #extension filter
-    if [ -d $MODULE_DIR -a ! -z "filter_module" ];then
-        MODULE_NAMES=`ls $MODULE_DIR|grep -E "$filter_module"`
+    if [ -d $MODULE_DIR ];then
+        if [ -z "$filter_module" ] ; then
+            MODULE_NAMES=`ls $MODULE_DIR`
+        else
+            MODULE_NAMES=`ls $MODULE_DIR|grep -E "$filter_module"`
+        fi
+    else
+        info "MODULE_DIR INVALID;exit"
+        exit 0
     fi
 
     grep_version=
