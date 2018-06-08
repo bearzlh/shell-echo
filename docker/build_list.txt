@@ -1,0 +1,16 @@
+php-5.3.29-nginx
+php-5.3.29-nts-apache-prefork
+php-5.4.45-nginx
+php-5.4.45-nts-apache-prefork
+php-5.5.38-nginx
+php-5.5.38-nts-apache-prefork
+php-5.6.35-nginx
+php-5.6.35-nts-apache-prefork
+php-5.6.35-zts-apache-prefork
+php-7.0.29-nginx
+php-7.0.29-nts-apache-prefork
+php-7.1.17-nginx
+php-7.1.17-nts-apache-prefork
+php-7.2.5-nginx
+php-7.2.5-nts-apache-prefork
+php-7.2.5-zts-apache-prefork
