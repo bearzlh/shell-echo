@@ -27,8 +27,9 @@ build ()
     TMP='/tmp/'
     if [ -z "`docker images|grep $1`" ] ; then
         exec_cmd "mkdir $TMP$1"
+        exec_cmd "cp -r ${SRC}* $TMP$1/"
         exec_cmd "cp ./config/$1 $TMP$1/Dockerfile" 
-        exec_cm "docker build -t $1 $TMP$1 >> ./build_log/${1}.log"
+        exec_cmd "docker build -t $1 $TMP$1 >> ./build_log/${1}.log"
     else
         echo "$1 has been builded,continue" >> ./build_log/${1}.log
     fi
