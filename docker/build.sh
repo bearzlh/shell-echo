@@ -37,4 +37,4 @@ build ()
 
 export -f build
 
-parallel -j $THREAD build ::: `ls ./config/`
+parallel -j $THREAD build ::: `cat ./build_list.txt`
