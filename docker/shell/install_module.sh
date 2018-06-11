@@ -30,8 +30,6 @@ PHP_SOFTWARE_DIR=/data/software/php/
 
 if [ ! -z "$MODULE_DIR_NAME" ] ; then
     MODULE_DIR=/data/modules/$MODULE_DIR_NAME/
-else
-    MODULE_DIR=/data/modules/
 fi
 
 
@@ -255,7 +253,11 @@ test ()
 case $1 in
     #install modules
     "install"|"i")
-        install "$2" "$3"
+        if [ -z "$MODULE_DIR" ] ; then
+            log "module dir invalid"
+        else
+            install "$2" "$3"
+        fi
         ;;
 
     #check which php version and which module will be dealed

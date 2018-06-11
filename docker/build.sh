@@ -19,6 +19,11 @@
 
 THREAD=4
 
+
+if [ ! -z "$1" ] ; then
+    THREAD=$1
+fi
+
 build ()
 {
     source "./shell/main.sh"
@@ -26,6 +31,10 @@ build ()
     SRC='./'
     TMP='/tmp/'
     if [ -z "`docker images|grep $1`" ] ; then
+
+        if [ -d "$TMP$1" ] ; then
+            rm -rf "$TMP$1"
+        fi
         exec_cmd "mkdir $TMP$1"
         exec_cmd "cp -r ${SRC}* $TMP$1/"
         exec_cmd "cp ./config/$1 $TMP$1/Dockerfile" 

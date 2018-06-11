@@ -19,15 +19,10 @@
 source ./main.sh
 INSTALL_LIST="APR APR_UTIL APACHE"
 
-
-if [ -z "$APACHE_VERSION" ] ; then
-    info "apache will not be installed with apache version empty"
-    exit
-fi
-
 #APACHE_VERSION=2.4.33
 #APR_VERSION=1.6.3
 #APR_UTIL_VERSION=1.6.1
+IF_FASTCGI=1
 
 APACHE_MIRROR=http://archive.apache.org/dist/httpd/httpd-${APACHE_VERSION}.tar.gz
 APR_MIRROR=http://archive.apache.org/dist/apr/apr-${APR_VERSION}.tar.gz
@@ -112,10 +107,29 @@ install()
             exec_cmd "cp -r ${SRC_DIR}conf/apache/* ${prefix}/conf/"
         fi
 
+        if [ ! -z "$IF_FASTCGI" ] ; then
+            install_fastcgi
+        fi
+
         info "installed $dir successful with path of `dirname $prefix`"
     done
 
 }
+
+
+install_fastcgi ()
+{
+    #exec_cmd "git clone https://github.com/ByteInternet/libapache-mod-fastcgi"
+    exec_cmd "cd libapache-mod-fastcgi"
+    exec_cmd "patch -p1 < ../patch.diff"
+    exec_cmd "cp Makefile.AP2 Makefile"
+    exec_cmd "sed -i 's#^top_dir.*#top_dir=/data/software/apache#' Makefile"
+    exec_cmd "make"
+    exec_cmd "make install"
+    exec_cmd "sed -i '/mod_fastcgi.so/d' ${APACHE_PREFIX}/conf/httpd.conf"
+    exec_cmd "sed -i '\$a\LoadModule fastcgi_module modules/mod_fastcgi.so' ${APACHE_PREFIX}/conf/httpd.conf"
+    exec_cmd "sed -i 's#.*vhosts.conf#Include conf/extra/httpd-vhosts-fastcgi.conf#' ${APACHE_PREFIX}/conf/httpd.conf"
+}	# ----------  end of function install_fastcgi  ----------
 
 case $1 in
     "i" | "install")
@@ -129,7 +143,9 @@ case $1 in
         fi
 
         ;;
-
+    "f" | "fastcgi")
+        install_fastcgi
+        ;;
     *)
         info "help:./$0 (i)stall"
         ;;
