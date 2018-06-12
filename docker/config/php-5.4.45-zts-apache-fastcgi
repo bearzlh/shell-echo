@@ -12,19 +12,21 @@ IF_FPM="" \
 IF_APACHE="" \
 IF_FASTCGI="1" \
 APACHE_VERSION="2.4.23" \
-APACHE_FLAG="" \
+APACHE_FLAG="--with-mpm=worker" \
 APR_VERSION="1.6.3" \
 APR_UTIL_VERSION="1.6.1" \
 NGINX_VERSION=""
 
 RUN \
 yum -y install epel-release && \
-yum -y install openssl-devel wget gcc expat-devel zlib-devel make libjpeg-turbo-devel libmcrypt-devel libpng-devel mariadb-devel libxml2 libcurl-devel pcre-devel libxml2-devel autoconf libmemcached-devel && \
+yum -y install patch openssl-devel wget gcc expat-devel zlib-devel make libjpeg-turbo-devel libmcrypt-devel libpng-devel mariadb-devel libxml2 libcurl-devel pcre-devel libxml2-devel autoconf libmemcached-devel && \
 ./install_apache.sh install && \
 ./install_php.sh install && \
 ./install_nginx.sh install && \
 ./install_module.sh install && \
-rm -rf /opt && \
-rm -rf /var/cache/*
+rm -rf /opt \
+rm -rf /var/cache/* \
+yum -y remove epel-release openssl-devel wget gcc expat-devel zlib-devel make libjpeg-turbo-devel libmcrypt-devel libpng-devel mariadb-devel libxml2-devel libcurl-devel pcre-devel libxml2-devel autoconf libmemcached-devel
+
 
 CMD ["sh", "-c", "/data/init.sh"]
