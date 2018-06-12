@@ -97,10 +97,6 @@ do {                                                  \
 } while (0)
 #endif
 
-#ifdef APACHE24
-module AP_MODULE_DECLARE_DATA fastcgi_module;
-#endif
-
 /*
  * Global variables
  */
@@ -3013,11 +3009,7 @@ static void register_hooks(apr_pool_t * p)
     ap_hook_fixups(fixups, NULL, NULL, APR_HOOK_MIDDLE); 
 }
 
-#ifdef APACHE24
-AP_DECLARE_MODULE(fastcgi) =
-#else
 module AP_MODULE_DECLARE_DATA fastcgi_module =
-#endif
 {
     STANDARD20_MODULE_STUFF,
     fcgi_config_create_dir_config,  /* per-directory config creator */

@@ -22,7 +22,7 @@ INSTALL_LIST="APR APR_UTIL APACHE"
 #APACHE_VERSION=2.4.33
 #APR_VERSION=1.6.3
 #APR_UTIL_VERSION=1.6.1
-IF_FASTCGI=1
+#IF_FASTCGI=1
 
 APACHE_MIRROR=http://archive.apache.org/dist/httpd/httpd-${APACHE_VERSION}.tar.gz
 APR_MIRROR=http://archive.apache.org/dist/apr/apr-${APR_VERSION}.tar.gz

@@ -148,6 +148,25 @@ valid ()
     fi
 }	# ----------  end of function valid  ----------
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  check_libs
+#   DESCRIPTION:  install libs if not installed
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+check_libs()
+{
+    for lib in $LIB
+    do
+        log "check $lib"
+        rpm -q $lib>/dev/null 2>&1
+        if [ $? != 0 ];then
+            exec_cmd "yum -y install $lib"
+        fi
+        info "ok"
+    done
+}	# ----------  end of function check_libs  ----------
+
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  download
