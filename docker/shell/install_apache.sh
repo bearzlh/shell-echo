@@ -106,21 +106,19 @@ install()
         if [ $file == "APACHE" -a -d "${SRC_DIR}conf/apache" ] ; then
             exec_cmd "cp -r ${SRC_DIR}conf/apache/* ${prefix}/conf/"
         fi
-
-        if [ ! -z "$IF_FASTCGI" ] ; then
-            install_fastcgi
-        fi
-
         info "installed $dir successful with path of `dirname $prefix`"
     done
 
+    if [ ! -z "$IF_FASTCGI" ] ; then
+        install_fastcgi
+    fi
 }
 
 
 install_fastcgi ()
 {
     #exec_cmd "git clone https://github.com/ByteInternet/libapache-mod-fastcgi"
-    exec_cmd "cd libapache-mod-fastcgi"
+    exec_cmd "cd ${SRC_DIR}libapache-mod-fastcgi"
     exec_cmd "patch -p1 < ../patch.diff"
     exec_cmd "cp Makefile.AP2 Makefile"
     exec_cmd "sed -i 's#^top_dir.*#top_dir=/data/software/apache#' Makefile"
