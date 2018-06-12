@@ -1,1 +1,2 @@
-php-5.4.45-zts-apache-fastcgi
+php-7.1.17-zts-apache-fastcgi
+php-5.5.38-nts-apache-fastcgi

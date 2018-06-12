@@ -24,8 +24,8 @@ yum -y install patch openssl-devel wget gcc expat-devel zlib-devel make libjpeg-
 ./install_php.sh install && \
 ./install_nginx.sh install && \
 ./install_module.sh install && \
-rm -rf /opt \
-rm -rf /var/cache/* \
+rm -rf /opt && \
+rm -rf /var/cache/* && \
 yum -y remove epel-release openssl-devel wget gcc expat-devel zlib-devel make libjpeg-turbo-devel libmcrypt-devel libpng-devel mariadb-devel libxml2-devel libcurl-devel pcre-devel libxml2-devel autoconf libmemcached-devel
 
 
