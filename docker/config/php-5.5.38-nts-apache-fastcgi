@@ -11,6 +11,7 @@ ZTS_FLAGS="nts" \
 IF_FPM="" \
 IF_APACHE="" \
 APACHE_VERSION="2.4.23" \
+IF_FASTCGI="1" \
 APACHE_FLAG="--with-mpm=worker" \
 APR_VERSION="1.6.3" \
 APR_UTIL_VERSION="1.6.1" \

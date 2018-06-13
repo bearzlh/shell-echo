@@ -16,6 +16,8 @@ PHP_MIRROR=http://cn2.php.net/get/php-{VERSION}.tar.gz/from/this/mirror
 #php source dir
 PHP_SRC_DIR="/opt/src/php/"
 
+SRC_DIR=`dirname $PHP_SRC_DIR`/
+
 #dir to install php
 PHP_SOFTWARE_DIR='/data/software/php/'
 
@@ -98,14 +100,14 @@ backup_so()
 #-------------------------------------------------------------------------------
 install ()
 {
-    check_libs "$LIBS"
-    check_file
+    #check_libs "$LIBS"
+    #check_file
     #待安装的php目录列表
     TO_INSALL_VERSION_LIST=`echo $PHP_VERSIONS | grep -E "$1"`
 
     for version in $TO_INSALL_VERSION_LIST
     do
-        exec_cmd "cd ${PHP_SRC_DIR}php-$version"
+        #exec_cmd "cd ${PHP_SRC_DIR}php-$version"
         #zts flag
         for zts in $ZTS_FLAGS
         do
@@ -124,9 +126,13 @@ install ()
                 version_ts=${version}_nts
             fi
 
-            make distclean>/dev/null 2>&1
-            exec_cmd "./configure --prefix=${PHP_SOFTWARE_DIR}${version_ts} $flags"
-            exec_cmd "sed -i 's/-g /-ggdb3 /g' Makefile"
+            #make distclean>/dev/null 2>&1
+            #exec_cmd "./configure --prefix=${PHP_SOFTWARE_DIR}${version_ts} $flags"
+            if [ ! -z "$IF_FASTCGI" ] ; then
+                exec_cmd "sed -i 's/{php_version}/$version_ts/' ${SRC_DIR}conf/apache/extra/httpd-vhosts-fastcgi.conf"
+            fi
+continue
+exec_cmd "sed -i 's/-g /-ggdb3 /g' Makefile"
             exec_cmd "make"
             #remove php installed dir if exists
             if [ -d "${PHP_SOFTWARE_DIR}${version_ts}" ];then
@@ -149,6 +155,11 @@ install ()
                     exec_cmd "cp ${PHP_SOFTWARE_DIR}${version_ts}/etc/php-fpm.d/www.conf.default ${PHP_SOFTWARE_DIR}${version_ts}/etc/php-fpm.d/www.conf"
                 fi
                 
+            fi
+
+
+            if [ ! -z "$IF_FASTCGI" ] ; then
+                exec_cmd "sed -i 's/{php_version}/$version_ts/' ${SRC_DIR}conf/apache/extra/httpd-vhosts-fastcgi.conf"
             fi
 
             exec_cmd "cp php.ini-development ${PHP_SOFTWARE_DIR}${version_ts}/lib/php.ini"
