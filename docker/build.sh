@@ -47,4 +47,4 @@ build ()
 
 export -f build
 
-parallel -j $THREAD build ::: `cat ./build_list.txt`
+parallel -j $THREAD build ::: `cat ./build_list.txt | grep -v '^#'`
